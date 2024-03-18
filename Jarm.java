@@ -26,16 +26,16 @@ public class Jarm extends JPanel
     JFrame frame = new JFrame ();
 
     final int Wid = 800;
-    final int Ht  = 800;
+    final int Ht  = 600;
 
     int       keyVal;
 
-    final int Nservo       = 2;
+    final int Nservo       = 3;
     int       ang  []      = new int [Nservo];
     int       posX []      = new int [Nservo];
     int       posY []      = new int [Nservo];
 
-    int       SegLen       = 300;
+    int       SegLen []    = { 300, 200, 50 };
     int       X0           = 100;
     int       Y0           = Ht / 2;
     int       servoIdx     = 0;
@@ -164,19 +164,19 @@ public class Jarm extends JPanel
     private void computePos ()
     {
         double rad  = 0;
-        posX [0]    = X0 + SegLen;;
+        posX [0]    = X0 + SegLen [0];
         for (int n = 0; n < Nservo; n++)  {
             rad      += Math.toRadians (ang [n]);
-            double s  = Math.sin (rad);
-            double c  = Math.cos (rad);
+            double s  = -Math.sin (rad);
+            double c  =  Math.cos (rad);
 
             if (0 == n)  {
-                posX [n] = X0 + (int)(c * SegLen);
-                posY [n] = Y0 + (int)(s * SegLen);
+                posX [n] = X0 + (int)(c * SegLen [n]);
+                posY [n] = Y0 + (int)(s * SegLen [n]);
             }
             else {
-                posX [n] = posX [n-1] + (int)(c * SegLen);
-                posY [n] = posY [n-1] + (int)(s * SegLen);
+                posX [n] = posX [n-1] + (int)(c * SegLen [n]);
+                posY [n] = posY [n-1] + (int)(s * SegLen [n]);
             }
         }
     }
@@ -184,12 +184,12 @@ public class Jarm extends JPanel
     // ----------------------------------------------------
     private void reset ()
     {
-        posX [0] = X0 + SegLen;;
+        posX [0] = X0 + SegLen [0];
         for (int n = 0; n < Nservo; n++)  {
             ang   [n] = 0;
             posY  [n] = Y0;
             if (0 < n)
-                posX [n] = posX [n-1] + SegLen;
+                posX [n] = posX [n-1] + SegLen [n];
         }
     }
 
