@@ -36,9 +36,11 @@ public class Jarm extends JPanel
     int       posY []      = new int [Nservo];
 
     int       SegLen []    = { 300, 200, 50 };
-    int       X0           = 100;
-    int       Y0           = Ht / 2;
+    int       x            = Wid / 2;
+    int       y            = Ht / 2;
     int       servoIdx     = 0;
+
+    int  mode              = 1;
 
     // ----------------------------------------------------
     public Jarm ()
@@ -82,11 +84,12 @@ public class Jarm extends JPanel
     // ----------------------------------------------------
     public void mousePressed (MouseEvent ev)
     {
-        int  x       = (int) ev.getX();
-        int  y       = (int) ev.getY();
-        System.out.format ("mousePressed:\n");
+        x = (int) ev.getX();
+        y = (int) ev.getY();
+        System.out.format ("mousePressed: (%4d, %4d)\n", x, y);
 
         requestFocusInWindow ();
+        repaint ();
     }
 
     public void mouseClicked  (MouseEvent e) { }
@@ -128,6 +131,11 @@ public class Jarm extends JPanel
             keyVal = 0;
             break;
 
+        case 'm':
+            mode = keyVal;
+            keyVal = 0;
+            break;
+
         case 's':
             if (keyVal < Nservo)
                 servoIdx = keyVal;
@@ -164,15 +172,15 @@ public class Jarm extends JPanel
     private void computePos ()
     {
         double rad  = 0;
-        posX [0]    = X0 + SegLen [0];
+        posX [0]    = SegLen [0];
         for (int n = 0; n < Nservo; n++)  {
             rad      += Math.toRadians (ang [n]);
             double s  = -Math.sin (rad);
             double c  =  Math.cos (rad);
 
             if (0 == n)  {
-                posX [n] = X0 + (int)(c * SegLen [n]);
-                posY [n] = Y0 + (int)(s * SegLen [n]);
+                posX [n] = (int)(c * SegLen [n]);
+                posY [n] = (int)(s * SegLen [n]);
             }
             else {
                 posX [n] = posX [n-1] + (int)(c * SegLen [n]);
@@ -184,16 +192,16 @@ public class Jarm extends JPanel
     // ----------------------------------------------------
     private void reset ()
     {
-        posX [0] = X0 + SegLen [0];
+        posX [0] = SegLen [0];
         for (int n = 0; n < Nservo; n++)  {
             ang   [n] = 0;
-            posY  [n] = Y0;
+            posY  [n] = 0;
             if (0 < n)
                 posX [n] = posX [n-1] + SegLen [n];
         }
     }
 
-    // ----------------------------------------------------
+    // ------------------------------------------------------------------------
  // @Override
     public  void paintComponent (Graphics g)
     {
@@ -204,6 +212,106 @@ public class Jarm extends JPanel
         // clear background
         g2d.setColor (new Color(0, 32, 0));
         g2d.fillRect (0, 0, Wid, Ht);
+
+        switch (mode) {
+        case 2:
+            paintArm (g2d);
+            break;
+
+        case 1:
+            paintTrig (g2d);
+
+        case 0:
+        default:
+            paintWaves (g2d);
+            break;
+        }
+    }
+
+    // ----------------------------------------------------
+    private  void paintWaves (Graphics2D g2d)
+    {
+        int    A   = 50;
+        double dA  = 2 * Math.PI / (float)Wid;
+        int    dX  = 10;
+
+        int    offset = 100;
+        double ang = -Math.PI;
+        int    y0  = offset - (int) (A * Math.sin (ang));
+
+        g2d.setColor (Color.gray);
+        g2d.drawLine (0, offset, Wid, offset);
+        g2d.drawLine (Wid/2, offset-A, Wid/2, offset+A);
+
+        g2d.setColor (Color.yellow);
+        for (int x = 10; x < Wid; x += 10)  {
+            ang   = x * dA + Math.PI;
+            int y = offset - (int) (A * Math.sin (ang));
+            g2d.drawLine (x-dX, y0, x, y);
+            y0    = y;
+        }
+
+        offset = 200;
+        ang    = -Math.PI;
+        y0     = offset - (int) (A * Math.cos (ang));
+
+        g2d.setColor (Color.gray);
+        g2d.drawLine (0, offset, Wid, offset);
+        g2d.drawLine (Wid/2, offset-A, Wid/2, offset+A);
+
+        g2d.setColor (Color.orange);
+        for (int x = 10; x < Wid; x += 10)  {
+            ang   = x * dA + Math.PI;
+            int y = offset - (int) (A * Math.cos (ang));
+            g2d.drawLine (x-dX, y0, x, y);
+            y0    = y;
+        }
+    }
+
+    // ----------------------------------------------------
+    private  void paintTrig (Graphics2D g2d)
+    {
+        int  X0  = 100;
+        int  Y0  = Ht - 100;
+
+        int  wid = x - X0;
+        int  ht  = Y0 - y;
+
+        // draw axis
+        g2d.setColor (Color.gray);
+        g2d.drawLine ( 0, Y0, Wid, Y0);
+        g2d.drawLine (X0,  0, X0,  Ht);
+
+        g2d.setColor (Color.red);
+        g2d.drawLine (X0, Y0, X0 + wid, Y0 - ht);
+
+        Stroke s = new BasicStroke (
+                        1.0f,                       // Width
+                        BasicStroke.CAP_SQUARE,     // End cap
+                        BasicStroke.JOIN_MITER,     // Join style
+                        10.0f,                      // Miter limit
+                        new float[] {16.0f,20.0f},  // Dash pattern
+                        0.0f);                      // Dash phase
+        g2d.setStroke (s);
+
+        g2d.setColor (Color.yellow);
+        g2d.drawLine (X0 + wid, Y0,      X0 + wid, Y0 - ht);
+        g2d.drawLine (X0,       Y0 - ht, X0 + wid, Y0 - ht);
+
+        int ang = (int) Math.toDegrees (Math.atan2 (ht, wid));
+        g2d.setStroke (new BasicStroke (1));
+
+        int  len = 100;
+        g2d.drawArc  (X0 - len/2, Y0 - len/2, len, len, 0, ang);
+
+        System.out.format ("  ang %6d, (%4d, %4d)\n", ang, wid, ht);
+    }
+
+    // ----------------------------------------------------
+    private  void paintArm (Graphics2D g2d)
+    {
+        int  X0  = 100;
+        int  Y0  = Ht - 100;
 
         // text
         int fSize = 14;
@@ -237,8 +345,9 @@ public class Jarm extends JPanel
         int  y = Y0;
 
         for (int n = 0; n < Nservo; n++)  {
-            g2d.drawOval (x - OvalWid/2, y - OvalHt/2, OvalWid, OvalHt);
-            g2d.drawLine (x, y, posX [n], posY [n]);
+            g2d.drawOval (X0 + x - OvalWid/2, Y0 + y - OvalHt/2,
+                                                    OvalWid, OvalHt);
+            g2d.drawLine (x, y, X0 + posX [n], X0 + posY [n]);
             x = posX [n];
             y = posY [n];
         }
