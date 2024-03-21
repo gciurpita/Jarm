@@ -37,7 +37,7 @@ public class Jarm extends JPanel
     double    c    []      = new double [Nservo];   // cos
     double    s    []      = new double [Nservo];   // cos
 
-    int       SegLen []    = { 200, 200, 50 };
+    int       SegLen []    = { 300, 300, 50 };
     int       x            = Wid / 2;
     int       y            = Ht / 2;
     int       servoIdx     = 0;
@@ -173,7 +173,7 @@ public class Jarm extends JPanel
             keyVal = 0;
             break;
 
-        case 't':
+        case 'T':
             mode = M_Trig;
             break;
 
@@ -440,5 +440,25 @@ public class Jarm extends JPanel
             x = posX [n];
             y = posY [n];
         }
+
+        // draw help text
+        x = Wid - 250;
+        y = 0;
+        g2d.setFont (new Font ("Courier", Font.PLAIN, fSize));
+        g2d.setColor (Color.white);
+
+        g2d.drawString ("  A  Arm mode",               x, y+= fSize);
+        g2d.drawString ("# a  set angle",              x, y+= fSize);
+        g2d.drawString ("  d  show dashed lines",      x, y+= fSize);
+        g2d.drawString ("  e  show equations",         x, y+= fSize);
+        g2d.drawString ("  e  show labels",            x, y+= fSize);
+        g2d.drawString ("  m  enable mouse selection", x, y+= fSize);
+        g2d.drawString ("# s  select servo",           x, y+= fSize);
+        g2d.drawString ("  T  Trig mode",              x, y+= fSize);
+        g2d.drawString ("  v  show values",            x, y+= fSize);
+        g2d.drawString ("  v  show wave",              x, y+= fSize);
+        g2d.drawString ("# x  set segment x position", x, y+= fSize);
+        g2d.drawString ("# y  set segment y position", x, y+= fSize);
+        g2d.drawString ("  z  reset",                  x, y+= fSize);
     }
 }
