@@ -40,7 +40,17 @@ public class Jarm extends JPanel
     int       y            = Ht / 2;
     int       servoIdx     = 0;
 
-    int  mode              = 1;
+    final int M_Trig       = 0;
+    final int M_Arm        = 1;
+    int  mode              = M_Trig;
+
+    final int O_Lbl        =  1;
+    final int O_Eq         =  2;
+    final int O_Dash       =  4;
+    final int O_Wave       =  8;
+    final int O_Mouse      = 16;
+    final int O_Val        = 32;
+    int       option       =  0;
 
     // ----------------------------------------------------
     public Jarm ()
@@ -84,8 +94,10 @@ public class Jarm extends JPanel
     // ----------------------------------------------------
     public void mousePressed (MouseEvent ev)
     {
-        x = (int) ev.getX();
-        y = (int) ev.getY();
+        if (0 != (option & O_Mouse))  {
+            x = (int) ev.getX();
+            y = (int) ev.getY();
+        }
         System.out.format ("mousePressed: (%4d, %4d)\n", x, y);
 
         requestFocusInWindow ();
@@ -126,20 +138,50 @@ public class Jarm extends JPanel
             break;
 
         case 'a':
+            mode = M_Arm;
+            break;
+
+        case 'A':
             if (keyVal <= 180)
                 ang [servoIdx] = keyVal;
             keyVal = 0;
             break;
 
+        case 'd':
+            option ^= O_Dash;
+            break;
+
+        case 'e':
+            option &= ~(O_Val | O_Lbl);
+            option ^= O_Eq;
+            break;
+
+        case 'l':
+            option &= ~(O_Val | O_Eq);
+            option ^= O_Lbl;
+            break;
+
         case 'm':
-            mode = keyVal;
-            keyVal = 0;
+            option ^= O_Mouse;
             break;
 
         case 's':
             if (keyVal < Nservo)
                 servoIdx = keyVal;
             keyVal = 0;
+            break;
+
+        case 't':
+            mode = M_Trig;
+            break;
+
+        case 'v':
+            option &= ~(O_Eq | O_Lbl);
+            option ^= O_Val;
+            break;
+
+        case 'w':
+            option ^= O_Wave;
             break;
 
         case 'x':
@@ -214,34 +256,39 @@ public class Jarm extends JPanel
         g2d.fillRect (0, 0, Wid, Ht);
 
         switch (mode) {
-        case 2:
+        case M_Arm:
             paintArm (g2d);
             break;
 
-        case 1:
+        case M_Trig:
             paintTrig (g2d);
-
-        case 0:
-        default:
-            paintWaves (g2d);
             break;
         }
     }
 
     // ----------------------------------------------------
-    private  void paintWaves (Graphics2D g2d)
+    private  void paintWaves (
+        Graphics2D g2d,
+        int        ang0 )
     {
         int    A   = 50;
         double dA  = 2 * Math.PI / (float)Wid;
         int    dX  = 10;
 
-        int    offset = 100;
+        int    offset  = 100;
+        int    offsetB = 200;
         double ang = -Math.PI;
         int    y0  = offset - (int) (A * Math.sin (ang));
 
         g2d.setColor (Color.gray);
+        g2d.setStroke (new BasicStroke());
         g2d.drawLine (0, offset, Wid, offset);
-        g2d.drawLine (Wid/2, offset-A, Wid/2, offset+A);
+        int x1 = (int) Wid * (180 + ang0) / 360;
+        g2d.drawLine (x1, offset-A, x1, offsetB+A);
+
+        g2d.setColor (Color.white);
+        g2d.drawString ("sine",   0, offset);
+        g2d.drawString ("cosine", 0, offsetB);
 
         g2d.setColor (Color.yellow);
         for (int x = 10; x < Wid; x += 10)  {
@@ -251,18 +298,16 @@ public class Jarm extends JPanel
             y0    = y;
         }
 
-        offset = 200;
         ang    = -Math.PI;
-        y0     = offset - (int) (A * Math.cos (ang));
+        y0     = offsetB - (int) (A * Math.cos (ang));
 
         g2d.setColor (Color.gray);
-        g2d.drawLine (0, offset, Wid, offset);
-        g2d.drawLine (Wid/2, offset-A, Wid/2, offset+A);
+        g2d.drawLine (0, offsetB, Wid, offsetB);
 
         g2d.setColor (Color.orange);
         for (int x = 10; x < Wid; x += 10)  {
             ang   = x * dA + Math.PI;
-            int y = offset - (int) (A * Math.cos (ang));
+            int y = offsetB - (int) (A * Math.cos (ang));
             g2d.drawLine (x-dX, y0, x, y);
             y0    = y;
         }
@@ -277,7 +322,7 @@ public class Jarm extends JPanel
         int  wid = x - X0;
         int  ht  = Y0 - y;
 
-        // draw axis
+        // draw axis & line
         g2d.setColor (Color.gray);
         g2d.drawLine ( 0, Y0, Wid, Y0);
         g2d.drawLine (X0,  0, X0,  Ht);
@@ -285,26 +330,63 @@ public class Jarm extends JPanel
         g2d.setColor (Color.red);
         g2d.drawLine (X0, Y0, X0 + wid, Y0 - ht);
 
-        Stroke s = new BasicStroke (
-                        1.0f,                       // Width
-                        BasicStroke.CAP_SQUARE,     // End cap
-                        BasicStroke.JOIN_MITER,     // Join style
-                        10.0f,                      // Miter limit
-                        new float[] {16.0f,20.0f},  // Dash pattern
-                        0.0f);                      // Dash phase
-        g2d.setStroke (s);
-
-        g2d.setColor (Color.yellow);
-        g2d.drawLine (X0 + wid, Y0,      X0 + wid, Y0 - ht);
-        g2d.drawLine (X0,       Y0 - ht, X0 + wid, Y0 - ht);
-
-        int ang = (int) Math.toDegrees (Math.atan2 (ht, wid));
-        g2d.setStroke (new BasicStroke (1));
-
-        int  len = 100;
+        // draw angle arc
+        int  len = (int)(Math.sqrt (wid*wid + ht*ht));
+        int  ang = (int) Math.toDegrees (Math.atan2 (ht, wid));
+        g2d.setColor (Color.green);
         g2d.drawArc  (X0 - len/2, Y0 - len/2, len, len, 0, ang);
 
-        System.out.format ("  ang %6d, (%4d, %4d)\n", ang, wid, ht);
+        // define string parameters
+        int  fSize = 18;
+        g2d.setFont    (new Font ("Arial", Font.PLAIN, fSize));
+
+        // draw dashed lines
+        if (0 != (option & O_Dash)) {
+            Stroke s = new BasicStroke (
+                            1.0f,                       // Width
+                            BasicStroke.CAP_SQUARE,     // End cap
+                            BasicStroke.JOIN_MITER,     // Join style
+                            10.0f,                      // Miter limit
+                            new float[] {16.0f,20.0f},  // Dash pattern
+                            0.0f);                      // Dash phase
+            g2d.setStroke (s);
+
+            g2d.setColor (Color.yellow);
+            g2d.drawLine (X0 + wid, Y0,      X0 + wid, Y0 - ht);
+            g2d.drawLine (X0,       Y0 - ht, X0 + wid, Y0 - ht);
+
+            // draw labels
+            g2d.setColor (Color.white);
+
+            double w  = Math.toRadians (ang/2);
+            int    x1 = X0 + (int)(len/2 * Math.cos (w));
+            int    y1 = Y0 - (int)(len/2 * Math.sin (w));
+
+            if (0 != (option & O_Val))  {
+                g2d.drawString (String.valueOf (ht),  X0+wid+10, Y0-ht/2);
+                g2d.drawString (String.valueOf (wid), X0+wid/2,  Y0-ht-10);
+                g2d.drawString (String.valueOf (len), X0+wid/2,  Y0-ht/2);
+
+                g2d.drawString (String.valueOf (ang)+"\u00B0", x1, y1);
+            }
+            else if (0 != (option & O_Lbl))  {
+                g2d.drawString ("opposite",           X0+wid+10, Y0-ht/2);
+                g2d.drawString ("adjacent",           X0+wid/2,  Y0-ht-10);
+                g2d.drawString ("hypotenuse",         X0+wid/2,  Y0-ht/2);
+                g2d.drawString ("\u03B1"+"\u00B0", x1, y1);
+            }
+            else if (0 != (option & O_Eq))  {
+                String angS = "\u03B1"+"\u00B0";
+                g2d.drawString ("hyp * sin("+angS+")", X0+wid+10, Y0-ht/2);
+                g2d.drawString ("hyp * cos("+angS+")", X0+wid/2,  Y0-ht-10);
+                g2d.drawString ("hyp",                 X0+wid/2,  Y0-ht/2);
+                g2d.drawString ("\u03B1"+"\u00B0", x1, y1);
+            }
+        }
+
+        // draw waveform
+        if (0 != (option & O_Wave))
+            paintWaves (g2d, ang);
     }
 
     // ----------------------------------------------------
