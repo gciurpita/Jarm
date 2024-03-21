@@ -20,6 +20,9 @@ run : $(Classes)
 
 all : $(Classes)
 
+jar : all
+		jar cmvf          MANIFEST.MF $(Targ).jar *.class
+
 # --------------------------------------------------------------------
 neat :
 		rm -f *~ *.class *.out *.xgr
