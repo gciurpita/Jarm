@@ -34,15 +34,17 @@ public class Jarm extends JPanel
     int       ang  []      = new int [Nservo];
     int       posX []      = new int [Nservo];
     int       posY []      = new int [Nservo];
+    double    c    []      = new double [Nservo];   // cos
+    double    s    []      = new double [Nservo];   // cos
 
-    int       SegLen []    = { 300, 200, 50 };
+    int       SegLen []    = { 200, 200, 50 };
     int       x            = Wid / 2;
     int       y            = Ht / 2;
     int       servoIdx     = 0;
 
     final int M_Trig       = 0;
     final int M_Arm        = 1;
-    int  mode              = M_Trig;
+    int  mode              = M_Arm;     // M_Trig;
 
     final int O_Lbl        =  1;
     final int O_Eq         =  2;
@@ -137,11 +139,11 @@ public class Jarm extends JPanel
             keyVal = -keyVal;
             break;
 
-        case 'a':
+        case 'A':
             mode = M_Arm;
             break;
 
-        case 'A':
+        case 'a':
             if (keyVal <= 180)
                 ang [servoIdx] = keyVal;
             keyVal = 0;
@@ -216,17 +218,17 @@ public class Jarm extends JPanel
         double rad  = 0;
         posX [0]    = SegLen [0];
         for (int n = 0; n < Nservo; n++)  {
-            rad      += Math.toRadians (ang [n]);
-            double s  = -Math.sin (rad);
-            double c  =  Math.cos (rad);
+            rad   += Math.toRadians (ang [n]);
+            s [n]  = -Math.sin (rad);
+            c [n]  =  Math.cos (rad);
 
             if (0 == n)  {
-                posX [n] = (int)(c * SegLen [n]);
-                posY [n] = (int)(s * SegLen [n]);
+                posX [n] = (int)(c [n] * SegLen [n]);
+                posY [n] = (int)(s [n] * SegLen [n]);
             }
             else {
-                posX [n] = posX [n-1] + (int)(c * SegLen [n]);
-                posY [n] = posY [n-1] + (int)(s * SegLen [n]);
+                posX [n] = posX [n-1] + (int)(c [n] * SegLen [n]);
+                posY [n] = posY [n-1] + (int)(s [n] * SegLen [n]);
             }
         }
     }
@@ -400,13 +402,15 @@ public class Jarm extends JPanel
         g2d.setFont (new Font ("Courier", Font.PLAIN, fSize));
         g2d.setColor (Color.white);
 
+        // draw text, value for each servo
         int  yTxt = fSize;
         for (int n = 0; n < Nservo; n++)  {
-            String fmt = "servo %d: ang %4d, x %6d, y %6d";
+            String fmt = "servo %d: ang %4d, cos %6.3f, sin %6.3f x %6d, y %6d";
+            String t   = String.format (
+                    fmt, n, ang [n], c [n], s [n], posX [n], posY [n]);
             if (n == servoIdx)
-                fmt = "servo %d: ang %4d, x %6d, y %6d <";
+                t += " <";
 
-            String t = String.format (fmt, n, ang [n], posX [n], posY [n]);
             g2d.drawString (t, 10, yTxt);
             yTxt += fSize;
         }
@@ -416,20 +420,23 @@ public class Jarm extends JPanel
             g2d.drawString (t, 10, yTxt);
         }
 
-        // draw something
+        // dimension of box arc resides within, arc centered
         final int OvalHt  = 20;
         final int OvalWid = 20;
 
+        // call student routine
         computePos ();
 
+        // update screen using computed values
         g2d.setColor (Color.red);
-        int  x = X0;
-        int  y = Y0;
+        int  x = 0;
+        int  y = 0;
 
         for (int n = 0; n < Nservo; n++)  {
-            g2d.drawOval (X0 + x - OvalWid/2, Y0 + y - OvalHt/2,
-                                                    OvalWid, OvalHt);
-            g2d.drawLine (x, y, X0 + posX [n], X0 + posY [n]);
+         // g2d.drawOval (X0 + x - OvalWid/2, Y0 + y - OvalHt/2,
+            g2d.drawOval (
+                X0 + x - OvalWid/2, Y0 - y - OvalHt/2, OvalWid, OvalHt);
+            g2d.drawLine (X0 + x, Y0 - y, X0 + posX [n], Y0 - posY [n]);
             x = posX [n];
             y = posY [n];
         }
